@@ -1,0 +1,7 @@
+django
+reportlab
+pandas
+matplotlib
+numpy
+statsmodels
+Faker

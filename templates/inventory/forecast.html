@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <title>Tüketim Tahmini</title>
+    <h2>{{ product.name }} için 7 Günlük Tüketim Tahmini</h2>
+
+    {% if image %}
+        <img src="data:image/png;base64,{{ image }}" />
+    {% else %}
+        <p>{{ message }}</p>
+    {% endif %}
+
+    <br><a href="{% url 'dashboard' %}">⬅ Geri dön</a>
+{% endblock content %}

@@ -1,0 +1,388 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+{% csrf_token %}
+
+
+<div class="container py-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">📦 Mevcut Stoklar</h2>
+        <button data-bs-toggle="modal" data-bs-target="#stockActionModal" class="btn btn-success">➕ Stok Ekle/Çıkart</button>
+    </div>
+
+
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="stockActionModal" tabindex="-1" aria-labelledby="stockModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">📋 Stok İşlemleri</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body text-center">
+
+                    <!-- Ana Butonlar -->
+                    <div id="actionSelection" class="mb-4">
+                        <button id="increaseStockBtn" class="btn btn-success btn-lg mx-2">➕ Stok Arttırma</button>
+                        <button id="decreaseStockBtn" class="btn btn-danger btn-lg mx-2">➖ Stok Azaltma</button>
+                    </div>
+                    
+                    <select id="stockDropdown" class="form-select" hidden>
+                        <option disabled selected>Yükleniyor...</option>
+                    </select>
+
+
+                    <!-- Dinamik İçerik Alanı -->
+                    <div id="dynamicContent">
+                        <p class="text-muted">Bir işlem seçin...</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            const increaseBtn = document.getElementById('increaseStockBtn');
+            const decreaseBtn = document.getElementById('decreaseStockBtn');
+            const contentDiv = document.getElementById('dynamicContent');
+
+            increaseBtn.addEventListener('click', () => {
+                $.ajax({
+                    url: '/inventory/api/stocks/',
+                    method: 'GET',
+                    success: function (response) {
+                        if (!Array.isArray(response)) {
+                            alert("📭 Henüz stok kaydı bulunamadı.");
+                            contentDiv.innerHTML = `
+                            <p class="text-muted">Kayıtlı stok bulunamadı. Lütfen önce yeni bir stok girin.</p>
+                             <hr>
+                            <button class="btn btn-outline-secondary" onclick="showNewProductForm()">➕ Yeni Ürün Ekle</button>
+                            `;
+
+                            
+                        }
+
+
+                        let options = '<option value="">Stok Seçin</option>';
+                        response.forEach(item => {
+                            options += `<option value="${item.id}">${item.label}</option>`;
+                        });
+
+                        contentDiv.innerHTML = `
+                            <h5 class="mb-3">📈 Stok Arttır</h5>
+                            <select class="form-select mb-3" id="increaseProductSelect">
+                                ${options}
+                            </select>
+                            <input type="number" class="form-control mb-3" placeholder="Adet girin" id="increaseQty">
+                            <button class="btn btn-primary mb-2" onclick="submitStockIncrease()">✅ Kaydet</button>
+
+                            <hr>
+                            <button class="btn btn-outline-secondary" onclick="showNewProductForm()">➕ Yeni Ürün Ekle</button>
+
+
+                        `;
+                    },
+                    error: function () {
+                        alert("❌ Stok verisi alınamadı.");
+                    }
+                });
+            });
+
+
+
+
+            decreaseBtn.addEventListener('click', () => {
+                $.ajax({
+                    url: '/inventory/api/stocks/',
+                    method: 'GET',
+                    dataType: 'json',
+                    success: function (response) {
+                        console.log('Gelen stok verisi:', response);
+
+                        if (!Array.isArray(response)) {
+                            alert("📭 Henüz stok kaydı bulunamadı.");
+                            contentDiv.innerHTML = `<p class="text-muted">Kayıtlı stok bulunamadı. Lütfen önce yeni bir stok girin.</p>`;
+                            return;
+                        }
+
+                        let options = '<option value="">Stok Seçin</option>';
+                        response.forEach(item => {
+                            options += `<option value="${item.id}">${item.label}</option>`;
+                        });
+
+                        const html = `
+                            <h5 class="mb-3">📉 Stok Azalt</h5>
+                            <select class="form-select mb-3" id="decreaseProductSelect">
+                                ${options}
+                            </select>
+                            <input type="number" class="form-control mb-3" placeholder="Azaltılacak miktar" id="decreaseQty">
+                            <button class="btn btn-danger" onclick="submitStockDecrease()">✅ Kaydet</button>
+                        `;
+
+                        $('#dynamicContent').html(html);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Stok API hatası:', status, error);
+                        alert('❌ Stok verisi alınamadı.');
+                    }
+                });
+            });
+
+        });
+
+        function getCSRFToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+
+
+        function showNewProductForm() {
+            // AJAX ile hem product hem warehouse verileri çekilsin
+            $.when(
+                $.get('/inventory/api/products/'),     // ürün listesi
+                $.get('/inventory/api/warehouses/')    // depo listesi
+            ).done(function (productRes, warehouseRes) {
+                const products = productRes[0].products;
+                const warehouses = warehouseRes[0].warehouses;
+
+                let productOptions = '<option value="">Ürün Seçin</option>';
+                products.forEach(p => {
+                    productOptions += `<option value="${p.id}">${p.name}</option>`;
+                });
+
+                let warehouseOptions = '<option value="">Depo Seçin</option>';
+                warehouses.forEach(w => {
+                    warehouseOptions += `<option value="${w.id}">${w.name}</option>`;
+                });
+
+                const contentDiv = document.getElementById('dynamicContent');
+                contentDiv.innerHTML = `
+                    <h5 class="mb-3">➕ Yeni Stok Girişi</h5>
+                    <select class="form-select mb-2" id="stockProduct">${productOptions}</select>
+                    <select class="form-select mb-2" id="stockWarehouse">${warehouseOptions}</select>
+                    <input type="date" class="form-control mb-2" id="stockExpiration" placeholder="Son Kullanma Tarihi">
+                    <input type="number" class="form-control mb-2" id="stockQty" placeholder="Miktar">
+                    <button class="btn btn-success" onclick="CreateNewStock()">✅ Stok Ekle</button>
+                `;
+            }).fail(function () {
+                alert("Veriler alınamadı. Lütfen daha sonra tekrar deneyin.");
+            });
+        }
+
+
+        
+
+        function CreateNewStock() {
+            const product = $('#stockProduct').val();
+            const warehouse = $('#stockWarehouse').val();
+            const expiration = $('#stockExpiration').val();
+            const qty = $('#stockQty').val();
+
+            if (!product || !warehouse || !expiration || !qty) {
+                alert("Lütfen tüm alanları doldurun.");
+                return;
+            }
+
+            $.ajax({
+                url: '/inventory/api/create-stock/',
+                method: 'POST',
+                data: {
+                    product_id: product,
+                    warehouse_id: warehouse,
+                    expiration_date: expiration,
+                    quantity: qty,
+                    csrfmiddlewaretoken: getCSRFToken()
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert('✅ Yeni stok başarıyla eklendi!.');
+                        window.location.href = response.redirect_url;
+                    } else {
+                        alert('⚠️ İşlem tamamlandı ama yönlendirme yapılamadı.');
+                    }
+                },
+                error: function (xhr) {
+                    console.error(xhr.responseText);
+                    alert("❌ Stok eklenemedi.");
+                }
+            });
+        }
+
+
+
+
+
+        function submitStockIncrease() {
+            const stockId = $('#increaseProductSelect').val();
+            const qty = $('#increaseQty').val();
+
+            if (!stockId || !qty) {
+                alert("Lütfen stok ve miktar seçin.");
+                return;
+            }
+
+            $.ajax({
+                url: '/inventory/api/increase-stock/',
+                method: 'POST',
+                data: {
+                    stock_id: stockId,
+                    quantity: qty,
+                    csrfmiddlewaretoken: getCSRFToken()
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert("✅ Stok başarıyla arttırıldı.");
+                        window.location.href = response.redirect_url;
+                    } else {
+                        alert("⚠️ İşlem tamamlandı ama yönlendirme yapılamadı.");
+                    }
+                },
+                error: function (xhr) {
+                    alert("❌ Stok arttırma işlemi başarısız oldu.");
+                    console.error(xhr.responseText);
+                }
+            });
+        }
+
+    
+
+
+
+        function submitStockDecrease() {
+            const stockId = $('#decreaseProductSelect').val();
+            const qty = $('#decreaseQty').val();
+
+            if (!stockId || !qty) {
+                alert("Lütfen stok ve miktar seçin.");
+                return;
+            }
+
+            $.ajax({
+                url: '/inventory/api/decrease-stock/',
+                method: 'POST',
+                data: {
+                    stock_id: stockId,
+                    quantity: qty,
+                    csrfmiddlewaretoken: getCSRFToken()
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert('✅ Stok başarıyla güncellendi.');
+                        window.location.href = response.redirect_url;
+                    } else {
+                        alert('⚠️ İşlem tamamlandı ama yönlendirme yapılamadı.');
+                    }
+                },
+                error: function (xhr) {
+                    alert('❌ Stok azaltma işlemi başarısız oldu.');
+                    console.error(xhr.responseText);
+                }
+            });
+        }
+
+
+
+
+
+    </script>
+
+
+
+    <form method="get" class="mb-4 d-flex justify-content-center">
+        <div class="input-group" style="max-width: 400px;">
+            <input type="text" name="q" class="form-control" placeholder="Ürün adı ile ara..." value="{{ search_query }}">
+            <button class="btn btn-outline-secondary" type="submit">Ara</button>
+        </div>
+    </form>
+
+    
+
+    <table class="table table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Ürün</th>
+                <th>Depo</th>
+                <th>Miktar</th>
+                <th>Son Kullanma</th>
+                <th>Sıcaklık Aralığı</th>
+                <th>Hareketler</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stock in stock_data %}
+            <tr>
+                <td>{{ stock.product }}</td>
+                <td>{{ stock.warehouse }}</td>
+                <td>{{ stock.quantity }}</td>
+                <td>{{ stock.expiration_date }}</td>
+                <td>{{ stock.temp_aralik }}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#movements{{ forloop.counter }}">
+                        👁 Göster
+                    </button>
+                </td>
+            </tr>
+            <tr class="collapse" id="movements{{ forloop.counter }}">
+                <td colspan="5">
+                    {% if stock.movements %}
+                    <table class="table table-sm table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tür</th>
+                                <th>Miktar</th>
+                                <th>Tarih</th>
+                                <th>Kullanıcı</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mv in stock.movements %}
+                            <tr>
+                                <td>{{ mv.movement_type }}</td>
+                                <td>{{ mv.quantity }}</td>
+                                <td>{{ mv.timestamp }}</td>
+                                <td>{{ mv.user }}</td>
+                                <td>
+                                    <a href="{% url 'edit_stock_movement' mv.mv_id %}?next={{ request.path }}" class="btn btn-sm btn-outline-warning">✏️ Güncelle</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-muted mb-0">Hareket kaydı yok.</p>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+
+</div>
+
+
+
+
+<!-- Ana Sayfa Butonu -->
+<div class="text-center mt-4">
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">⬅ Ana Sayfaya Dön</a>
+</div>
+
+
+
+
+
+
+{% endblock %}

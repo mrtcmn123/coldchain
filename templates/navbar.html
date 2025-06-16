@@ -1,0 +1,178 @@
+<style>
+.navbar {
+  background-color: #1f2d3d; /* Daha kurumsal lacivert-gri */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.navbar-brand, .nav-link, .dropdown-toggle {
+  color: #ffffff !important;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover, .dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.06); /* Daha zarif hover */
+}
+
+.dropdown-menu {
+  border-radius: 0.6rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  border: none;
+  background-color: #ffffff;
+  animation: fadeIn 0.2s ease-in-out;
+  min-width: 180px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-item {
+  color: #1f2d3d;
+  font-weight: 500;
+}
+
+.profile-img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-right: 8px;
+  border: 2px solid white;
+  transition: transform 0.3s;
+}
+
+.nav-link.dropdown-toggle:hover .profile-img {
+  transform: scale(1.05);
+}
+
+.dropdown-item i {
+  width: 20px;
+  color: #6c757d;
+}
+.profile-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #e5e8e8 ; /* yarı şeffaf beyaz */
+  color: #000;
+  font-size: 16px;
+  font-weight: bold;
+  border: 2px solid #ffffff;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.profile-icon:hover {
+  background-color: #ffffff33;
+  transform: scale(1.05);
+}
+
+</style>
+
+<nav class="navbar navbar-expand-lg sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{% url 'dashboard' %}">
+      ❄ ERP Paneli
+    </a>
+
+    <button class="navbar-toggler text-white" type="button" data-bs-toggle="collapse" data-bs-target="#erpNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse justify-content-between" id="erpNavbar">
+      <!-- Sol Menü -->
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'dashboard' %}">Ana Sayfa</a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="managementDropdown" data-bs-toggle="dropdown">
+            Stok Yönetimi
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{% url 'all_products' %}"><i class="fas fa-thermometer-half"></i> Ürünler</a></li>
+            <li><a class="dropdown-item" href="{% url 'current_stock' %}"><i class="fas fa-boxes"></i> Stok Takibi</a></li>
+            <li><a class="dropdown-item" href="{% url 'stock_movement_list' %}"><i class="fas fa-pen"></i> Giriş/Çıkış Kayıtları</a></li>
+            <li><a class="dropdown-item" href="{% url 'temperature_alert' %}"><i class="fas fa-thermometer-half"></i> Sıcaklık Uyarıları</a></li>
+          </ul>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="reportsDropdown" data-bs-toggle="dropdown">
+            Raporlar
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{% url 'export_all_stocks_pdf' %}" target="_blank"><i class="fas fa-file-pdf"></i> PDF Raporu</a></li>
+            <li><a class="dropdown-item" href="{% url 'expiring_products' %}"><i class="fas fa-hourglass-end"></i> SKT Ürünler</a></li>
+          </ul>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="managementDropdown" data-bs-toggle="dropdown">
+            Depo Yönetimi
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{% url 'depo_yönetimi' %}"><i class="fas fa-thermometer-half"></i> Depolar</a></li>
+
+          </ul>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="managementDropdown" data-bs-toggle="dropdown">
+            Tahminleme Yönetimi
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{% url 'tahminleme_dasboard' %}"><i class="fas fa-thermometer-half"></i> Tahminleme</a></li>
+
+          </ul>
+        </li>
+
+        
+      </ul>
+
+      <!-- Kullanıcı Profili -->
+      <ul class="navbar-nav">
+
+        <li class="nav-item dropdown me-3">
+          <a class="nav-link position-relative mt-1" href="#" id="alertsDropdown" data-bs-toggle="dropdown">
+            <i class="fas fa-bell fa-lg"></i>
+            {% if user_alerts %}
+              <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+            {% endif %}
+          </a>
+
+          <ul class="dropdown-menu dropdown-menu-end dropdown-alerts" aria-labelledby="alertsDropdown" style="width: 300px;">
+            {% if user_alerts %}
+              {% for alert in user_alerts %}
+                <li>
+                  <a class="dropdown-item small text-wrap" href="{{ alert.link }}">
+                    <i class="fas fa-exclamation-circle me-2 text-warning"></i> {{ alert.message }}
+                  </a>
+                </li>
+              {% endfor %}
+            {% else %}
+              <li>
+                <span class="dropdown-item text-muted">Hiç bildiriminiz yok</span>
+              </li>
+            {% endif %}
+          </ul>
+        </li>
+
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" data-bs-toggle="dropdown">
+            <div class="profile-icon d-flex align-items-center justify-content-center">
+              <i class="fas fa-user"></i>
+            </div>
+            <span class="ms-2">{{ request.user.first_name }}</span>
+          </a>
+
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{% url 'ayarlar' %}"><i class="fas fa-cog"></i> Ayarlar</a></li>
+            <li><a class="dropdown-item" href="#"><i class="fas fa-user"></i> Profil</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>🕒 Tükenme Süresi Tahmini</h2>
+
+<table border="1" cellpadding="8">
+    <thead>
+        <tr>
+            <th>Ürün</th>
+            <th>Depo</th>
+            <th>Mevcut Stok</th>
+            <th>Günlük Tüketim Ort.</th>
+            <th>Tahmini Tükenme Günü</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in forecast_data %}
+        <tr>
+            <td>{{ item.product.name }}</td>
+            <td>{{ item.warehouse.name }}</td>
+            <td>{{ item.stock }}</td>
+            <td>{{ item.daily_consumption }}</td>
+            <td>
+                {% if item.days_remaining == '∞' %}
+                    Yetersiz veri
+                {% else %}
+                    {{ item.days_remaining }} gün
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock content %}

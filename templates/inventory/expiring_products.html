@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<title>Son Kullanma Tarihi Yaklaşan Ürünler</title>
+
+
+<div class="container py-5">
+    <h2>📅 SKT'si 3 Ay İçinde Olan Ürünler</h2>
+
+    {% if expiring_stocks %}
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Ürün</th>
+                    <th>Depo</th>
+                    <th>SKT</th>
+                    <th>Miktar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in expiring_stocks %}
+                    <tr>
+                        <td>{{ stock.product.name }}</td>
+                        <td>{{ stock.warehouse.name }}</td>
+                        <td>{{ stock.expiration_date|date:"d.m.Y" }}</td>
+                        <td>{{ stock.quantity }} {{ stock.product.unit }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert alert-info">✔️ Son kullanma tarihi yaklaşan ürün yok.</div>
+    {% endif %}
+
+    <div class="text-center mt-4">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">⬅ Ana Sayfa</a>
+    </div>
+</div>
+
+{% endblock content %}

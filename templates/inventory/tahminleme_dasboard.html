@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="container py-5">
+
+    <h2 class="mb-4">📉 Tüketim Tahmini Paneli</h2>
+
+    <!-- GRAFİK -->
+    <div class="mb-5">
+        <canvas id="predictionChart" height="120"></canvas>
+    </div>
+
+    <table class="table table-bordered mt-4">
+        <thead class="table-light">
+            <tr>
+                <th>Ürün</th>
+
+                <th>
+                    <a href="?sort=current_stock&order={% if current_sort == 'current_stock' and current_order == 'asc' %}desc{% else %}asc{% endif %}">
+                        Mevcut Stok
+                        {% if current_sort == 'current_stock' %}
+                            {% if current_order == 'asc' %} 🔼 {% else %} 🔽 {% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+
+                <th>
+                    <a href="?sort=daily_out_avg&order={% if current_sort == 'daily_out_avg' and current_order == 'asc' %}desc{% else %}asc{% endif %}">
+                        Günlük Tüketim Ort.
+                        {% if current_sort == 'daily_out_avg' %}
+                            {% if current_order == 'asc' %} 🔼 {% else %} 🔽 {% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+
+                <th>
+                    <a href="?sort=days_left&order={% if current_sort == 'days_left' and current_order == 'asc' %}desc{% else %}asc{% endif %}">
+                        Tahmini Bitme Süresi (gün)
+                        {% if current_sort == 'days_left' %}
+                            {% if current_order == 'asc' %} 🔼 {% else %} 🔽 {% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in prediction_data %}
+            <tr>
+                <td>{{ row.product.name }}</td>
+                <td>{{ row.current_stock }}</td>
+                <td>{{ row.daily_out_avg }}</td>
+                <td>
+                    {% if row.days_left %}
+                        {{ row.days_left }} gün
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+
+
+<script>
+    const labels = [{% for item in prediction_data %}'{{ item.product.name }}',{% endfor %}];
+    const data = {
+        labels: labels,
+        datasets: [{
+            label: 'Günlük Tüketim Ort.',
+            data: [{% for item in prediction_data %}{{ item.daily_out_avg }},{% endfor %}],
+            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+        }]
+    };
+
+    const config = {
+        type: 'bar',
+        data: data,
+        options: {
+            responsive: true,
+            indexAxis: 'y',
+            onClick: function (evt, elements) {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const selectedLabel = this.data.labels[index];
+                    const searchQuery = encodeURIComponent(selectedLabel);
+                    window.location.href = `/inventory/current-stock/?q=${searchQuery}`;
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: true }
+            },
+            scales: {
+                x: { beginAtZero: true }
+            }
+        }
+    };
+
+    new Chart(
+        document.getElementById('predictionChart'),
+        config
+    );
+</script>
+
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+
+    
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">📦 Giriş/Çıkış Kayıtları</h2>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle shadow-sm">
+            <thead class="table-light">
+                <tr>
+                    <th>Ürün Adı</th>
+                    <th>Depo</th>
+                    <th>SKU</th>
+                    <th>İşlem Tür</th>
+                    <th>Miktar</th>
+                    <th>Kullanıcı</th>
+                    <th>Tarih</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in stock_movement_list %}
+                <tr>
+                    <td><strong>{{ item.product.name }}</strong></td>
+                    <td>{{ item.stock_obj.warehouse }}</td>
+                    <td>{{ item.product.sku }}</td>
+                    <td>{{ item.movement_type }}</td>
+                    <td><strong>{{ item.quantity }} {{ item.product.unit }}</strong></td>
+                    <td>{{ item.user }}</td>
+                    <td>{{ item.timestamp }}</td>
+                    <td>
+                        <a href="{% url 'edit_stock_movement' item.id %}?next={{ request.path }}" class="btn btn-sm btn-outline-warning">✏️ Güncelle</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted">Hiç ürün bulunamadı.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4 text-center">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">⬅ Ana Sayfaya Dön</a>
+    </div>
+</div>
+{% endblock content %}

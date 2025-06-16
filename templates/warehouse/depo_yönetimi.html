@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">🏭 Depo Yönetimi</h2>
+        <div>
+            <button id="saveTemperaturesBtn" class="btn btn-primary me-2">📅 Sıcaklıkları Kaydet</button>
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createWarehouseModal">➕ Yeni Depo</button>
+        </div>
+    </div>
+
+    <table class="table table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Depo Adı</th>
+                <th>Konum</th>
+                <th>Kayıtlı Sıcaklık</th>
+                <th>Anlık Sıcaklık (°C)</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="warehouse-table-body">
+            {% for warehouse in warehouses %}
+            <tr data-id="{{ warehouse.id }}">
+                <td>{{ warehouse.name }}</td>
+                <td>{{ warehouse.location }}</td>
+                <td>{{ warehouse.temperature }}</td>
+                <td class="temp-cell" id="temp-{{ warehouse.id }}">{{ warehouse.temperature }}</td>
+
+                <td>
+                    <a href="{% url 'warehouse_edit' warehouse.id %}" class="btn btn-sm btn-outline-warning">✏️ Güncelle</a>
+                </td>
+
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="my-5">
+        <h4>📊 Anlık Sıcaklık Grafiği</h4>
+        <canvas id="tempChart" height="100"></canvas>
+    </div>
+</div>
+
+
+<!-- Modal -->
+<div class="modal fade" id="createWarehouseModal" tabindex="-1" aria-labelledby="createWarehouseLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🆕 Yeni Depo Oluştur</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="newWarehouseName" class="form-control mb-2" placeholder="Depo Adı">
+        <input type="text" id="newWarehouseLocation" class="form-control mb-2" placeholder="Konum">
+        <input type="number" id="newWarehouseTemp" class="form-control mb-2" placeholder="Sıcaklık (°C)">
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="submitWarehouseBtn" class="btn btn-primary">💾 Kaydet</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<script>
+    document.getElementById('submitWarehouseBtn').addEventListener('click', function () {
+        const name = document.getElementById('newWarehouseName').value;
+        const location = document.getElementById('newWarehouseLocation').value;
+        const temperature = document.getElementById('newWarehouseTemp').value;
+
+        fetch('/warehouse/api/create-warehouse/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ name, location, temperature })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Yeni depo başarıyla eklendi.');
+                location.reload();
+            } else {
+                alert('❌ Hata: ' + (data.errors ? JSON.stringify(data.errors) : data.message));
+            }
+        })
+        .catch(error => {
+            console.error('❌ İstek hatası:', error);
+            alert('❌ Bir hata oluştu.');
+        });
+    });
+</script>
+
+
+
+
+<script>
+    const labels = [{% for warehouse in warehouses %}'{{ warehouse.name }}',{% endfor %}];
+    let data = {
+        labels: labels,
+        datasets: [{
+            label: 'Sıcaklık (°C)',
+            data: [{% for warehouse in warehouses %}{{ warehouse.temperature }},{% endfor %}],
+            borderWidth: 1,
+            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+            borderColor: 'rgba(75, 192, 192, 1)'
+        }]
+    };
+
+    const config = {
+        type: 'bar',
+        data: data,
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    min: 0,
+                    max: 40
+                }
+            }
+        }
+    };
+
+    const tempChart = new Chart(
+        document.getElementById('tempChart'),
+        config
+    );
+
+    function getRandomTemp(min, max) {
+        return (Math.random() * (max - min) + min).toFixed(1);
+    }
+
+    function simulateTemperatures() {
+        const tempCells = document.querySelectorAll('.temp-cell');
+        const chartData = tempChart.data.datasets[0].data;
+
+        tempCells.forEach((cell, index) => {
+            const newTemp = getRandomTemp(2, 12);
+            cell.textContent = newTemp;
+            chartData[index] = newTemp;
+        });
+
+        tempChart.update();
+    }
+
+    setInterval(simulateTemperatures, 2000);
+
+    document.getElementById('saveTemperaturesBtn').addEventListener('click', function () {
+        const tempData = [];
+        document.querySelectorAll('tr[data-id]').forEach(row => {
+            const id = row.getAttribute('data-id');
+            const temp = row.querySelector('.temp-cell').textContent;
+            tempData.push({ id, temperature: temp });
+        });
+
+        fetch('/warehouse/api/update-temperatures/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ temperatures: tempData })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Sıcaklıklar kaydedildi.');
+                location.reload();  // Sayfayı yenile
+            } else {
+                alert('❌ Kayıt başarısız.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('❌ Bir hata oluştu.');
+        });
+    });
+</script>
+
+<div class="text-center mt-4">
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">⬅ Ana Sayfaya Dön</a>
+</div>
+
+{% endblock %}

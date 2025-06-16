@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container py-5">
+    <h2 class="mb-4">🌡️ Sıcaklık Aşımı Olan Stoklar</h2>
+
+    {% if violating_stocks %}
+        <div class="alert alert-danger">
+            🚨 Toplam {{ violating_stocks|length }} stok, ürünün sıcaklık aralığı dışında saklanıyor!
+        </div>
+
+        <!-- Grafik -->
+        <div class="mb-5">
+            <canvas id="violatingChart" height="100"></canvas>
+        </div>
+
+        <!-- Tablo -->
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Ürün</th>
+                    <th>Depo</th>
+                    <th>Depo Sıcaklığı (°C)</th>
+                    <th>Ürün Sıcaklık Aralığı (°C)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in violating_stocks %}
+                <tr>
+                    <td>{{ stock.product.name }}</td>
+                    <td>{{ stock.warehouse.name }}</td>
+                    <td class="text-danger">{{ stock.warehouse.temperature }}</td>
+                    <td>{{ stock.product.min_temperature }}° – {{ stock.product.max_temperature }}°</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert alert-success">
+            👍 Tüm stoklar uygun sıcaklık aralığında saklanıyor.
+        </div>
+    {% endif %}
+</div>
+
+<!-- Grafik -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('violatingChart');
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [{% for stock in violating_stocks %}'{{ stock.product.name }}',{% endfor %}],
+            datasets: [{
+                label: 'Depo Sıcaklığı',
+                data: [{% for stock in violating_stocks %}{{ stock.warehouse.temperature }},{% endfor %}],
+                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    min: 0,
+                    max: 40,
+                    title: {
+                        display: true,
+                        text: 'Sıcaklık (°C)'
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

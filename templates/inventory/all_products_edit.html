@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container py-5" style="max-width: 600px;">
+    <h2 class="mb-4 text-center">Ürün Güncelleme</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    
+
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            {{form}}
+        </div>
+
+        
+
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">⬅ Ana Sayfa</a>
+            
+            <div>
+                <a href="{% url 'current_stock' %}" class="btn btn-secondary">Geri</a>
+                <button type="submit" class="btn btn-success">💾 Kaydet</button>
+            </div>
+        </div>
+    </form>
+
+    <hr class="my-4">
+
+    <form method="post" onsubmit="return confirm('Bu ürünü tamamen silmek istediğinize emin misiniz?');">
+        {% csrf_token %}
+        <input type="hidden" name="delete_product" value="1">
+        <button type="submit" class="btn btn-danger w-100">🗑️ Ürünü Tamamen Sil</button>
+    </form>
+
+    
+</div>
+{% endblock content %}
